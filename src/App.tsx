@@ -32,6 +32,7 @@ interface CharacterStyles {
   };
 }
 
+// FloatingParticle: Animated background particle for visual effect
 const FloatingParticle: React.FC<{ delay: number }> = ({ delay }) => (
   <div 
     className="absolute w-2 h-2 bg-blue-400/30 rounded-full animate-pulse"
@@ -44,6 +45,7 @@ const FloatingParticle: React.FC<{ delay: number }> = ({ delay }) => (
   />
 );
 
+// Array of gradient color classes for the animated laptop/phone
 const laptopColors = [
   'bg-gradient-to-br from-blue-300 to-purple-500',
   'bg-gradient-to-br from-green-300 to-green-700',
@@ -52,6 +54,7 @@ const laptopColors = [
   'bg-gradient-to-br from-cyan-300 to-blue-500'
 ];
 
+// AnimatedCharacter: The animated laptop emoji for desktop
 const AnimatedCharacter: React.FC<{
   mousePos: MousePosition;
   formState: 'idle' | 'typing' | 'success' | 'error' | 'loading';
@@ -60,10 +63,14 @@ const AnimatedCharacter: React.FC<{
   laptopColor: string;
   onLaptopClick: () => void;
   showLaughMouth?: boolean;
-}> = ({ mousePos, formState, isVisible, isPasswordVisible, laptopColor, onLaptopClick, showLaughMouth }) => {
+  isLogin: boolean;
+}> = ({ mousePos, formState, isVisible, isPasswordVisible, laptopColor, onLaptopClick, showLaughMouth, isLogin }) => {
+  // Ref for the emoji container to calculate its position
   const containerRef = useRef<HTMLDivElement>(null);
+  // State for the eye position (for mouse tracking)
   const [eyePosition, setEyePosition] = useState({ x: 0, y: 0 });
 
+  // Move eyes to follow the mouse, unless password is visible
   useEffect(() => {
     if (containerRef.current && isVisible && !isPasswordVisible) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -78,6 +85,7 @@ const AnimatedCharacter: React.FC<{
     }
   }, [mousePos, isVisible, isPasswordVisible]);
 
+  // Get face styles based on form state (happy, sad, loading, etc.)
   const getCharacterStyles = (): CharacterStyles => {
     if (showLaughMouth) {
       return {
@@ -145,13 +153,16 @@ const AnimatedCharacter: React.FC<{
     }
   };
 
+  // Get the current styles for the face
   const styles = getCharacterStyles();
 
+  // Render the eyes, which follow the mouse or show closed if password is visible
   const renderEyes = () => {
     const eyesClass = showLaughMouth
       ? 'absolute top-4 md:top-6 left-1/2 -translate-x-1/2 flex space-x-8'
       : 'absolute top-8 md:top-8 left-1/2 -translate-x-1/2 flex space-x-8';
     if (isPasswordVisible) {
+      // Show closed eyes (a line) if password is visible
       return (
         <div className={eyesClass}>
           <div className={`${styles.eyeSize} ${styles.eyeColor} relative transition-all duration-300 flex items-center justify-center`}>
@@ -163,6 +174,7 @@ const AnimatedCharacter: React.FC<{
         </div>
       );
     }
+    // Show normal eyes with pupils that follow the mouse
     return (
       <div className={eyesClass}>
         <div className={`${styles.eyeSize} rounded-full ${styles.eyeColor} relative transition-all duration-200`}>
@@ -185,13 +197,40 @@ const AnimatedCharacter: React.FC<{
     );
   };
 
+  // Render the message inside the laptop screen for error/success
+  const renderScreenContent = () => {
+    if (formState === 'error') {
+      // Show error message in the screen
+      return (
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div className="text-white text-center animate-bounce">
+            <p className="text-sm font-bold">Invalid</p>
+            <p className="text-sm font-bold">Credentials!</p>
+          </div>
+        </div>
+      );
+    }
+    if (formState === 'success') {
+      // Show success message in the screen
+      return (
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div className="text-white text-center animate-bounce">
+            <p className="text-sm font-bold">{isLogin ? 'Welcome back!' : 'Account created!'}</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Main render for the animated laptop emoji
   return (
     <div
       ref={containerRef}
       className={`relative transition-all duration-500 flex flex-col items-center ${isVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
       style={{ perspective: '800px' }}
     >
-      {/* Shadow */}
+      {/* Shadow under the laptop */}
       <div className="absolute left-1/2 -translate-x-1/2 top-56 w-64 h-8 bg-black/40 rounded-full blur-md z-0" />
       {/* Laptop Hinge */}
       <div className="w-40 h-2 bg-gray-700 rounded-t-lg z-10 relative" style={{ marginBottom: '-8px', marginTop: '8px' }} />
@@ -205,15 +244,19 @@ const AnimatedCharacter: React.FC<{
         }}
         onClick={onLaptopClick}
       >
-        {/* Eyes */}
-        {renderEyes()}
-        {/* Mouth */}
-        <div className={`absolute ${showLaughMouth ? 'bottom-2 md:bottom-4' : 'bottom-6 md:bottom-10'} left-1/2 transform -translate-x-1/2`}>
-          <div className={`${styles.mouth.className} transition-all duration-300`} />
-          {styles.mouth.isLaugh && (
-            <div className="absolute left-1/2 top-1/2 w-12 h-6 bg-pink-300 rounded-b-full -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 1 }} />
-          )}
-        </div>
+        {/* Eyes - only show if not in error or success state */}
+        {formState !== 'error' && formState !== 'success' && renderEyes()}
+        {/* Mouth - only show if not in error or success state */}
+        {formState !== 'error' && formState !== 'success' && (
+          <div className={`absolute ${showLaughMouth ? 'bottom-2 md:bottom-4' : 'bottom-6 md:bottom-10'} left-1/2 transform -translate-x-1/2`}>
+            <div className={`${styles.mouth.className} transition-all duration-300`} />
+            {styles.mouth.isLaugh && (
+              <div className="absolute left-1/2 top-1/2 w-12 h-6 bg-pink-300 rounded-b-full -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 1 }} />
+            )}
+          </div>
+        )}
+        {/* Error/Success Message */}
+        {renderScreenContent()}
         {/* Optional: Success sparkles */}
         {formState === 'success' && (
           <>
@@ -222,6 +265,7 @@ const AnimatedCharacter: React.FC<{
             <Sparkles className="absolute bottom-6 left-8 text-white animate-pulse" size={18} />
           </>
         )}
+        {/* Loading animation: bouncing dots */}
         {formState === 'loading' && (
           <div className="absolute top-6 left-1/2 transform -translate-x-1/2">
             <div className="flex space-x-1">
@@ -232,7 +276,7 @@ const AnimatedCharacter: React.FC<{
           </div>
         )}
       </div>
-      {/* Laptop Base */}
+      {/* Laptop Base (keyboard and touchpad) */}
       <div
         className="w-52 h-8 md:w-72 md:h-10 bg-gray-800 rounded-b-2xl shadow-lg z-20 relative flex flex-col items-center"
         style={{ marginTop: '-12px', borderTop: '4px solid #222' }}
@@ -244,7 +288,7 @@ const AnimatedCharacter: React.FC<{
         {/* Touchpad */}
         <div className="w-16 h-3 bg-gray-600 rounded-md mt-2" />
       </div>
-      {/* Floating elements around laptop */}
+      {/* Floating elements around laptop for extra animation */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
@@ -263,6 +307,7 @@ const AnimatedCharacter: React.FC<{
   );
 };
 
+// InputField: Reusable input with icon, validation, and password toggle
 const InputField: React.FC<{
   type: string;
   placeholder: string;
@@ -308,7 +353,7 @@ const InputField: React.FC<{
   );
 };
 
-// Hook to detect if screen is mobile
+// useIsMobile: Custom hook to detect if the screen is mobile-sized
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   useEffect(() => {
@@ -319,7 +364,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-// AnimatedMobileCharacter component
+// AnimatedMobileCharacter: The animated phone emoji for mobile screens
 const AnimatedMobileCharacter: React.FC<{
   mousePos: MousePosition;
   formState: 'idle' | 'typing' | 'success' | 'error' | 'loading';
@@ -328,10 +373,14 @@ const AnimatedMobileCharacter: React.FC<{
   laptopColor: string;
   onLaptopClick: () => void;
   showLaughMouth?: boolean;
-}> = ({ mousePos, formState, isVisible, isPasswordVisible, laptopColor, onLaptopClick, showLaughMouth }) => {
+  isLogin: boolean;
+}> = ({ mousePos, formState, isVisible, isPasswordVisible, laptopColor, onLaptopClick, showLaughMouth, isLogin }) => {
+  // Ref for the emoji container to calculate its position
   const containerRef = useRef<HTMLDivElement>(null);
+  // State for the eye position (for mouse tracking)
   const [eyePosition, setEyePosition] = useState({ x: 0, y: 0 });
 
+  // Move eyes to follow the mouse, unless password is visible
   useEffect(() => {
     if (containerRef.current && isVisible && !isPasswordVisible) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -346,7 +395,7 @@ const AnimatedMobileCharacter: React.FC<{
     }
   }, [mousePos, isVisible, isPasswordVisible]);
 
-  // Styles for mobile phone
+  // Get face styles based on form state (happy, sad, loading, etc.)
   const getCharacterStyles = () => {
     if (showLaughMouth) {
       return {
@@ -414,10 +463,13 @@ const AnimatedMobileCharacter: React.FC<{
     }
   };
 
+  // Get the current styles for the face
   const styles = getCharacterStyles();
 
+  // Render the eyes, which follow the mouse or show closed if password is visible
   const renderEyes = () => {
     if (isPasswordVisible) {
+      // Show closed eyes (a line) if password is visible
       return (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 flex space-x-4">
           <div className={`${styles.eyeSize} ${styles.eyeColor} relative transition-all duration-300 flex items-center justify-center`}>
@@ -429,6 +481,7 @@ const AnimatedMobileCharacter: React.FC<{
         </div>
       );
     }
+    // Show normal eyes with pupils that follow the mouse
     return (
       <div className="absolute top-6 left-1/2 -translate-x-1/2 flex space-x-4">
         <div className={`${styles.eyeSize} rounded-full ${styles.eyeColor} relative transition-all duration-200`}>
@@ -451,6 +504,33 @@ const AnimatedMobileCharacter: React.FC<{
     );
   };
 
+  // Render the message inside the phone screen for error/success
+  const renderScreenContent = () => {
+    if (formState === 'error') {
+      // Show error message in the screen
+      return (
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div className="text-white text-center animate-bounce">
+            <p className="text-xs font-bold">Invalid</p>
+            <p className="text-xs font-bold">Credentials!</p>
+          </div>
+        </div>
+      );
+    }
+    if (formState === 'success') {
+      // Show success message in the screen
+      return (
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <div className="text-white text-center animate-bounce">
+            <p className="text-xs font-bold">{isLogin ? 'Welcome back!' : 'Account created!'}</p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Main render for the animated phone emoji
   return (
     <div
       ref={containerRef}
@@ -466,15 +546,19 @@ const AnimatedMobileCharacter: React.FC<{
         }}
         onClick={onLaptopClick}
       >
-        {/* Eyes */}
-        {renderEyes()}
-        {/* Mouth */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-          <div className={`${styles.mouth.className} transition-all duration-300`} />
-          {styles.mouth.isLaugh && (
-            <div className="absolute left-1/2 top-1/2 w-8 h-4 bg-pink-300 rounded-b-full -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 1 }} />
-          )}
-        </div>
+        {/* Eyes - only show if not in error or success state */}
+        {formState !== 'error' && formState !== 'success' && renderEyes()}
+        {/* Mouth - only show if not in error or success state */}
+        {formState !== 'error' && formState !== 'success' && (
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+            <div className={`${styles.mouth.className} transition-all duration-300`} />
+            {styles.mouth.isLaugh && (
+              <div className="absolute left-1/2 top-1/2 w-8 h-4 bg-pink-300 rounded-b-full -translate-x-1/2 -translate-y-1/2" style={{ zIndex: 1 }} />
+            )}
+          </div>
+        )}
+        {/* Error/Success Message */}
+        {renderScreenContent()}
         {/* Home Button */}
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-6 h-2 bg-gray-300 rounded-full" />
       </div>
@@ -482,57 +566,64 @@ const AnimatedMobileCharacter: React.FC<{
   );
 };
 
+// Main App component: Handles form, animation, and state logic
 function App() {
+  // State for login/signup mode
   const [isLogin, setIsLogin] = useState(true);
+  // Mouse position for eye tracking
   const [mousePos, setMousePos] = useState<MousePosition>({ x: 0, y: 0 });
+  // Form state: idle, typing, success, error, loading
   const [formState, setFormState] = useState<'idle' | 'typing' | 'success' | 'error' | 'loading'>('idle');
+  // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  // Form data
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
     confirmPassword: '',
     name: ''
   });
-  
+  // Validation state
   const [validation, setValidation] = useState<ValidationState>({
     email: false,
     password: false,
     confirmPassword: false,
     name: false
   });
-
+  // Which field is focused
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  // Current laptop/phone color index
   const [laptopColorIdx, setLaptopColorIdx] = useState(0);
+  // Show funny message when emoji is clicked
   const [showFunnyMsg, setShowFunnyMsg] = useState(false);
+  // Detect if mobile
   const isMobile = useIsMobile();
 
+  // Track mouse position for eye animation
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Validate form fields and update form state
   useEffect(() => {
-    // Validate form fields
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
     const passwordValid = formData.password.length >= 6;
     const confirmPasswordValid = !isLogin ? formData.password === formData.confirmPassword : true;
     const nameValid = !isLogin ? formData.name!.length >= 2 : true;
-
     setValidation({
       email: formData.email ? emailValid : false,
       password: formData.password ? passwordValid : false,
       confirmPassword: !isLogin ? (formData.confirmPassword ? confirmPasswordValid : false) : undefined,
       name: !isLogin ? (formData.name ? nameValid : false) : undefined
     });
-
-    // Update form state based on validation
+    // Update form state based on validation and focus
     if (focusedField) {
       setFormState('typing');
     } else if (formData.email || formData.password || formData.name || formData.confirmPassword) {
@@ -547,17 +638,16 @@ function App() {
     }
   }, [formData, isLogin, focusedField]);
 
+  // Handle form submission for login/signup
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setFormState('loading');
-
     // Wait a moment for animation
     await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
       if (isLogin) {
-        // LOGIN
+        // LOGIN: POST to /login
         const response = await fetch('http://localhost:5000/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -566,13 +656,24 @@ function App() {
             password: formData.password
           })
         });
+        const data = await response.json();
         if (response.ok) {
           setFormState('success');
+          // Clear form after successful login
+          setTimeout(() => {
+            setFormData({ email: '', password: '', confirmPassword: '', name: '' });
+            setFormState('idle');
+            setIsSubmitting(false);
+          }, 2000);
         } else {
           setFormState('error');
+          setTimeout(() => {
+            setFormState('idle');
+            setIsSubmitting(false);
+          }, 2000);
         }
       } else {
-        // SIGNUP
+        // SIGNUP: POST to /signup
         const response = await fetch('http://localhost:5000/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -582,13 +683,14 @@ function App() {
             name: formData.name
           })
         });
+        const data = await response.json();
         if (response.ok) {
           setFormState('success');
           setTimeout(() => {
             setFormData({ email: '', password: '', confirmPassword: '', name: '' });
             setFormState('idle');
             setIsSubmitting(false);
-          }, 2000); // setFormData({ email: '', password: '', confirmPassword: '', name: '' }); 
+          }, 2000);
         } else {
           setFormState('error');
           setTimeout(() => {
@@ -599,14 +701,14 @@ function App() {
       }
     } catch (err) {
       setFormState('error');
+      setTimeout(() => {
+        setFormState('idle');
+        setIsSubmitting(false);
+      }, 2000);
     }
-
-    setTimeout(() => {
-      setFormState('idle');
-      setIsSubmitting(false);
-    }, 2000);
   };
 
+  // Toggle between login and signup modes
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setFormData({ email: '', password: '', confirmPassword: '', name: '' });
@@ -617,6 +719,7 @@ function App() {
   // Check if any password field is visible
   const isAnyPasswordVisible = showPassword || showConfirmPassword;
 
+  // Main render: two panels (form and animation)
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col md:flex-row overflow-hidden relative">
       {/* Animated background elements */}
@@ -625,7 +728,6 @@ function App() {
           <FloatingParticle key={i} delay={i * 0.5} />
         ))}
       </div>
-
       {/* Left Panel - Forms */}
       <div className="w-full md:flex-1 flex items-center justify-center p-4 md:p-8 relative z-10">
         <div className="w-full max-w-md">
@@ -638,9 +740,9 @@ function App() {
               {isLogin ? 'Sign in to your account' : 'Create your account'}
             </p>
           </div>
-
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name field for signup */}
             {!isLogin && (
               <InputField
                 type="text"
@@ -653,7 +755,7 @@ function App() {
                 onBlur={() => setFocusedField(null)}
               />
             )}
-
+            {/* Email field */}
             <InputField
               type="email"
               placeholder="Email Address"
@@ -664,7 +766,7 @@ function App() {
               onFocus={() => setFocusedField('email')}
               onBlur={() => setFocusedField(null)}
             />
-
+            {/* Password field */}
             <InputField
               type="password"
               placeholder="Password"
@@ -677,7 +779,7 @@ function App() {
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
             />
-
+            {/* Confirm Password for signup */}
             {!isLogin && (
               <InputField
                 type="password"
@@ -692,7 +794,6 @@ function App() {
                 onBlur={() => setFocusedField(null)}
               />
             )}
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -713,8 +814,7 @@ function App() {
               )}
             </button>
           </form>
-
-          {/* Toggle Mode */}
+          {/* Toggle Mode (login/signup) */}
           <div className="text-center mt-8">
             <p className="text-gray-300">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
@@ -728,10 +828,10 @@ function App() {
           </div>
         </div>
       </div>
-
-      {/* Right Panel - Animation */}
+      {/* Right Panel - Animation (laptop/phone emoji) */}
       <div className="w-full md:flex-1 flex items-center justify-center p-4 md:p-8 relative">
         <div className="flex flex-col items-center justify-center w-full h-full">
+          {/* Show mobile or desktop emoji based on screen size */}
           {isMobile ? (
             <AnimatedMobileCharacter
               mousePos={mousePos}
@@ -745,6 +845,7 @@ function App() {
                 setTimeout(() => setShowFunnyMsg(false), 2000);
               }}
               showLaughMouth={showFunnyMsg}
+              isLogin={isLogin}
             />
           ) : (
             <AnimatedCharacter 
@@ -759,6 +860,7 @@ function App() {
                 setTimeout(() => setShowFunnyMsg(false), 2000);
               }}
               showLaughMouth={showFunnyMsg}
+              isLogin={isLogin}
             />
           )}
           {/* Robust visible funny message below emoji */}
@@ -777,7 +879,7 @@ function App() {
               Haha it's funny😂!
             </div>
           )}
-          {/* Status Messages */}
+          {/* Status Messages below emoji (for accessibility) */}
           <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center">
             {formState === 'success' && (
               <p className="text-green-400 font-semibold animate-bounce">
@@ -807,9 +909,8 @@ function App() {
           </div>
         </div>
       </div>
-
-      {/* Custom CSS for animations */}
-      <style jsx>{`
+      {/* Custom CSS for animations (floating, fade-in, etc.) */}
+      <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-20px) rotate(180deg); }
